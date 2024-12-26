@@ -3,6 +3,8 @@
 
 using namespace cv;
 
+#define selectMat() m_transientImgMat.empty() ? *m_pImgMat : m_transientImgMat
+
 ImageView::ImageView(QQuickPaintedItem* parent) : QQuickPaintedItem(parent)
 {
 }
@@ -15,7 +17,7 @@ void ImageView::zoomIn(double fMouseX, double fMouseY)
 	double fOldZoom = m_fZoomFactor;
 	setZoomFactor(m_fZoomFactor * 1.1);
 	calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
-	scaleImage(*m_pImgMat, m_showImgMat, m_fZoomFactor);
+	scaleImage(selectMat(), m_showImgMat, m_fZoomFactor);
 	update();
 }
 
@@ -27,7 +29,7 @@ void ImageView::zoomOut(double fMouseX, double fMouseY)
 	double fOldZoom = m_fZoomFactor;
 	setZoomFactor(m_fZoomFactor * 0.9);
 	calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
-	scaleImage(*m_pImgMat, m_showImgMat, m_fZoomFactor);
+	scaleImage(selectMat(), m_showImgMat, m_fZoomFactor);
 	update();
 }
 
@@ -46,22 +48,23 @@ void ImageView::applyImgConfig(bool bApply)
 
 	if (bApply)
 	{
-		m_pImgMat = std::make_shared<Mat>(std::move(m_transientImgMat));
-		resizeImage(*m_pImgMat, m_showImgMat, m_showImgMat.cols, m_showImgMat.rows);
-		update();
+		*m_pImgMat = std::move(m_transientImgMat);
 	}
 	else
 	{
-		m_transientImgMat = Mat();
+		m_transientImgMat.release();
 	}
+	resizeImage(*m_pImgMat, m_showImgMat, m_showImgMat.cols, m_showImgMat.rows);
+	update();
 }
 
 Q_INVOKABLE void ImageView::grayAdjust(int nVal)
 {
-	int nCols = m_showImgMat.cols;
-	int nRows = m_showImgMat.rows;
-	m_transientImgMat.convertTo(m_showImgMat, -1, 1, nVal); // alpha=1, beta=brightness
-	resizeImage(m_showImgMat, m_showImgMat, nCols, nRows);
+	if (nullptr == m_pImgMat)
+		return;
+
+	m_pImgMat->convertTo(m_transientImgMat, -1, 1, nVal); // alpha=1, beta=brightness
+	resizeImage(m_transientImgMat, m_showImgMat, m_showImgMat.cols, m_showImgMat.rows);
 	update();
 }
 
@@ -76,8 +79,11 @@ void ImageView::initImgPara()
 	m_fBaseOffsetY = 0.0;
 	m_fZoomOffsetX = 0.0;
 	m_fZoomOffsetY = 0.0;
-	m_pImgMat = nullptr;
 	m_fZoomFactor = 0.0;
+	m_nGrayValue = 0;
+	m_pImgMat = nullptr;
+	m_transientImgMat = Mat();
+	m_showImgMat = Mat();
 }
 
 void ImageView::resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight)
@@ -130,6 +136,11 @@ double ImageView::zoomFactor() const
 	return m_fZoomFactor;
 }
 
+int ImageView::grayValue() const
+{
+	return m_nGrayValue;
+}
+
 void ImageView::setWinHeight(int nWinHeight)
 {
 	m_nWinHeight = nWinHeight;
@@ -160,6 +171,12 @@ void ImageView::setZoomFactor(double fZoomFactor)
 {
 	m_fZoomFactor = std::clamp(fZoomFactor, m_fMinZoom, m_fMaxZoom);
 	emit zoomFactorChanged();
+}
+
+void ImageView::setGrayValue(int nGrayValue)
+{
+	m_nGrayValue = nGrayValue;
+	emit grayValueChanged();
 }
 
 int ImageView::calcMidOffsetX(const cv::Mat& src)

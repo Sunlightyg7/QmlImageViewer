@@ -11,7 +11,6 @@ Item {
         // 按下 ESC 键时退出
         if (event.key === Qt.Key_Escape) {
             cancelClicked();
-            close();
         }
     }
 
@@ -31,7 +30,6 @@ Item {
             anchors.right: cancelButton.left
             onClicked: {
                 confirmClicked();
-                close();
             }
         }
 
@@ -44,7 +42,6 @@ Item {
             anchors.right: parent.right
             onClicked: {
                 cancelClicked();
-                close();
             }
         }
     }

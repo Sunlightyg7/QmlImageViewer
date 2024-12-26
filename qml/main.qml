@@ -30,6 +30,7 @@ ApplicationWindow {
                 imageView.createTransientImg();
                 componentInstance.show();
 
+                componentInstance.grayValue = imageView.nGrayValue;
                 // 连接转发的 confirmClicked 信号
                 componentInstance.confirmClicked.connect(function() {
                     console.log("Confirm button clicked! (Handled in parent)");
@@ -49,7 +50,6 @@ ApplicationWindow {
                 });
 
                 componentInstance.onClosing.connect(function(message) {
-                    console.log("imgAdjustWin closed: " + message);
                     imgAdjustWin = null;
                 });
             } else {

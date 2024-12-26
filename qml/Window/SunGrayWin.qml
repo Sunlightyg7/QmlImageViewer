@@ -6,6 +6,9 @@ import "../Template"
 
 SunConfigWin {
 
+    // alias手动指定双向绑定，将值绑定到滑动条
+    property alias grayValue: grayBar.sliderValue
+
     Rectangle {
         anchors.fill:parent
         anchors.margins: 10  // 设置内边距
@@ -13,31 +16,12 @@ SunConfigWin {
         SunBar {
             id: grayBar
             label: "灰度"
-
-        }
-
-        SunOk {
-            id: sunok
         }
     }
 
-    Connections {
-        target: sunok
-        function onConfirmClicked() {
-            console.log("Confirm button clicked!");
-            confirmClicked();
-        }
-
-        function onCancelClicked() {
-            console.log("Cancel button clicked!");
-            cancelClicked();
-        }
+    onGrayValueChanged: {
+        propertyChanged("gray", grayValue);
     }
 
-    Connections {
-        target: grayBar
-        function onValueChanged() {
-            propertyChanged("gray", grayBar.value);
-        }
-    }
+
 }

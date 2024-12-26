@@ -4,11 +4,10 @@ import QtQuick.Controls 2.15
 Item {
     width: parent.width
 
-    property alias value: slider.value
+    property real sliderValue: 0 // 绑定到slider值
     property string label: "名称"  // 可以动态更改标签
     property real minValue: -100
     property real maxValue: 100
-    property real defaultValue: 0
     property real scaleValue: 0.9
 
     Rectangle {
@@ -47,7 +46,7 @@ Item {
                 if (!isNaN(newValue)) {
                     // 确保值在范围内
                     newValue = Math.min(Math.max(newValue, slider.from), slider.to);
-                    slider.value = newValue;
+                    sliderValue = newValue;
                 }
             }
         }
@@ -60,7 +59,7 @@ Item {
         width: parent.width * scaleValue
         from: minValue
         to: maxValue
-        value: defaultValue
+        value: sliderValue
         stepSize: 1
         anchors.top: title.bottom  // 滑块紧接在输入框下方
         anchors.topMargin: 10  // 控制滑块与输入框之间的距离
