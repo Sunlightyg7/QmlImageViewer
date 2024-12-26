@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="main.qml">qml/main.qml</file>
+        <file>qml/Control/SunBar.qml</file>
+        <file>qml/Control/SunOk.qml</file>
+        <file>qml/Window/SunGrayWin.qml</file>
+        <file>qml/Template/SunConfigWin.qml</file>
+    </qresource>
+</RCC>
