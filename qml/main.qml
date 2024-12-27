@@ -65,11 +65,14 @@ ApplicationWindow {
     }
 
     function initProperty(compIns, winName) {
-        if("grayValue" === winName) {
-            compIns.grayValue = imageView.nGrayValue;
+        if("gray" === winName) {
+            compIns.gray = imageView.nGray;
+        }
+        else if("brightness" === winName) {
+            compIns.brightness = imageView.nBrightness;
         }
         else {
-            console.log("initProperty failed, " + winName + "cannot found.")
+            console.log("initProperty failed, " + winName + " cannot found.")
         }
     }
 
@@ -133,6 +136,12 @@ ApplicationWindow {
                 text: qsTr("灰度")
                 onTriggered: {
                     createWindow("qml/Window/SunGrayWin.qml");
+                }
+            }
+            MenuItem {
+                text: qsTr("亮度")
+                onTriggered: {
+                    createWindow("qml/Window/SunBrightnessWin.qml");
                 }
             }
         }

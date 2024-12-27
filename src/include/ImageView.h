@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QQuickPaintedItem>
 #include "ImageViewModel.h"
+#include "Utils.h"
+#include "UndoRedoQueue.h"
 
 class ImageView : public QQuickPaintedItem
 {
@@ -13,33 +15,44 @@ class ImageView : public QQuickPaintedItem
 	Q_PROPERTY(double fBaseOffsetX READ baseOffsetX WRITE setBaseOffsetX NOTIFY baseOffsetXChanged)
 	Q_PROPERTY(double fBaseOffsetY READ baseOffsetY WRITE setBaseOffsetY NOTIFY baseOffsetYChanged)
 	Q_PROPERTY(double fZoomFactor READ zoomFactor WRITE setZoomFactor NOTIFY zoomFactorChanged)
-	Q_PROPERTY(QVariant nGrayValue READ grayValue WRITE setGrayValue NOTIFY grayValueChanged)
+	Q_PROPERTY(QVariant nGray READ gray WRITE setGray NOTIFY grayChanged)
+	Q_PROPERTY(QVariant nBrightness READ brightness WRITE setBrightness NOTIFY brightnessChanged)
 public:
 	explicit ImageView(QQuickPaintedItem* parent = nullptr);
 
+	Q_INVOKABLE void onImageChanged(ImageViewModel* viewModel);
 	Q_INVOKABLE bool isImageOpened();
 	Q_INVOKABLE void zoomIn(double fMouseX, double fMouseY); // 放大
 	Q_INVOKABLE void zoomOut(double fMouseX, double fMouseY); // 缩小
 	Q_INVOKABLE void applyImgConfig(QString strWinName, bool bApply);
 
 	/**
-	 * @brief 根据winName调用相应的Set函数，如grayValue，则调用SetGrayValue函数
-	 * 
-	 * @param [in] strWinName 窗口名
-	 * @param [in] varParms 新的参数
+	 * @brief 应用图像上的修改，并将窗口名和窗口中所有的修改放进修改队列
+	 *
+	 * @param [in] strWinName 窗口名，如gray
+	 * @param [in] mParms 包含窗口中所有的修改
 	 */
-	Q_INVOKABLE void invokeSetParmsFunc(const QString& strWinName, QVariant varParms);
+	Q_INVOKABLE void invokeSetParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms);
+
+	/**
+	 * @brief 恢复图像上的修改
+	 * 
+	 * @param [in] strWinName 窗口名，如gray
+	 * @param [in] mParms 包含窗口中所有的修改，用来撤回
+	 */
+	Q_INVOKABLE void invokeRestoreParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms);
 
 	/**
 	 * @brief 根据strFuncName调用相应的图像调整函数
-	 * 
-	 * @param [in] strFuncName 窗口名，如grayValue，则调用ConfigGrayValue函数
+	 *
+	 * @param [in] strFuncName 图像调整函数名，如gray，动态调用gray函数
 	 * @param [in] varParms 新的参数
 	 */
 	Q_INVOKABLE void invokeConfigFunc(QString strFuncName, QVariant varParms);
 
 	// ------------图像处理------------
-	Q_INVOKABLE void grayValue(const QVariant& nVal);
+	Q_INVOKABLE void gray(const QVariant& nVal, cv::Mat* pDstMat);
+	Q_INVOKABLE void brightness(const QVariant& nVal, cv::Mat* pDstMat);
 	// -------------------------------
 
 	void initImgPara();
@@ -52,7 +65,8 @@ public:
 	double baseOffsetX() const;
 	double baseOffsetY() const;
 	double zoomFactor() const;
-	Q_INVOKABLE QVariant grayValue() const;
+	Q_INVOKABLE QVariant gray() const;
+	Q_INVOKABLE QVariant brightness() const;
 	// -------------------------
 
 	// -----------set-----------
@@ -61,7 +75,8 @@ public:
 	void setBaseOffsetX(double fBaseOffsetX);
 	void setBaseOffsetY(double fBaseOffsetY);
 	void setZoomFactor(double fZoomFactor);
-	Q_INVOKABLE void setGrayValue(QVariant nGrayValue);
+	Q_INVOKABLE void setGray(QVariant nGray);
+	Q_INVOKABLE void setBrightness(QVariant nBrightness);
 	// -------------------------
 
 	int calcMidOffsetX(const cv::Mat& src);
@@ -69,14 +84,10 @@ public:
 	double calcZoomFactor(const cv::Mat& scale, const cv::Mat& src);
 	void calcScaleOffset(double fMouseX, double fMouseY, double fOldZoom, double fNewZoom);
 
-	QImage mat2QImg(const cv::Mat& imgMat);
 	int getScaledNumber(int nOldNum1, int nOldNum2, int nNewNum);
 
 protected:
 	virtual void paint(QPainter* pPainter) override;
-
-public slots:
-	void onImageChanged(ImageViewModel* viewModel);
 
 signals:
 	void winHeightChanged();
@@ -85,7 +96,8 @@ signals:
 	void baseOffsetYChanged();
 	void zoomFactorChanged();
 	void imageChanged();
-	void grayValueChanged();
+	void grayChanged();
+	void brightnessChanged();
 
 private:
 	int m_nWinHeight = 0;
@@ -99,16 +111,19 @@ private:
 	double m_fZoomFactor = 0.0;
 
 	// ---------图像参数-----------
-	int m_nGrayValue = 0;
+	int m_nGray = 0;
+	int m_nBrightness = 0;
 	// ---------------------------
 
-	QVariant m_varTmpConfig;
+	// 临时保存的图像调整参数<参数名，参数值>
+	QMap<QString, QVariant> m_mTmpConfig;
 
 	// 图像是否调整过至少过一次
 	bool m_bChanged = false;
 	std::shared_ptr<cv::Mat> m_pImgMat = nullptr;
 	cv::Mat m_transientImgMat;
 	cv::Mat m_showImgMat;
+	UndoRedoQueue m_qUndoRedo;
 };
 
 #endif // IMAGEVIEWMODEL_H

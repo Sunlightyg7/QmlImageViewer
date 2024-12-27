@@ -7,8 +7,8 @@ import "../Template"
 SunConfigWin {
 
     // alias手动指定双向绑定，将值绑定到滑动条
-    property alias gray: sunbar.sliderValue
-    property string winName: "gray"
+    property alias brightness: sunbar.sliderValue
+    property string winName: "brightness"
 
     Rectangle {
         anchors.fill:parent
@@ -16,12 +16,12 @@ SunConfigWin {
 
         SunBar {
             id: sunbar
-            label: "灰度"
+            label: "亮度"
         }
     }
 
-    onGrayChanged: {
-        propertyChanged("gray", gray);
+    onBrightnessChanged: {
+        propertyChanged("brightness", brightness);
     }
 
 
