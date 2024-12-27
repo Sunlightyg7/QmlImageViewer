@@ -3,10 +3,13 @@
 
 using namespace cv;
 
-#define selectMat() m_transientImgMat.empty() ? *m_pImgMat : m_transientImgMat
-
 ImageView::ImageView(QQuickPaintedItem* parent) : QQuickPaintedItem(parent)
 {
+}
+
+bool ImageView::isImageOpened()
+{
+	return m_pImgMat && !m_pImgMat->empty();
 }
 
 void ImageView::zoomIn(double fMouseX, double fMouseY)
@@ -17,7 +20,7 @@ void ImageView::zoomIn(double fMouseX, double fMouseY)
 	double fOldZoom = m_fZoomFactor;
 	setZoomFactor(m_fZoomFactor * 1.1);
 	calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
-	scaleImage(selectMat(), m_showImgMat, m_fZoomFactor);
+	scaleImage(m_transientImgMat, m_showImgMat, m_fZoomFactor);
 	update();
 }
 
@@ -29,48 +32,72 @@ void ImageView::zoomOut(double fMouseX, double fMouseY)
 	double fOldZoom = m_fZoomFactor;
 	setZoomFactor(m_fZoomFactor * 0.9);
 	calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
-	scaleImage(selectMat(), m_showImgMat, m_fZoomFactor);
+	scaleImage(m_transientImgMat, m_showImgMat, m_fZoomFactor);
 	update();
 }
 
-void ImageView::createTransientImg()
+void ImageView::applyImgConfig(QString strWinName, bool bApply)
 {
 	if (nullptr == m_pImgMat)
 		return;
 
-	m_transientImgMat = m_pImgMat->clone();
-}
-
-void ImageView::applyImgConfig(bool bApply)
-{
-	if (nullptr == m_pImgMat)
-		return;
-
+	// 应用当前图像调整
 	if (bApply)
 	{
-		*m_pImgMat = std::move(m_transientImgMat);
+		invokeSetParmsFunc(strWinName, m_varTmpConfig);
 	}
+	// 取消当前展示的图像调整
 	else
 	{
-		m_transientImgMat.release();
+
+		// 获取当前已应用的图像参数
+		QVariant varParms;
+		QMetaObject::invokeMethod(this, strWinName.toStdString().c_str(), Q_RETURN_ARG(QVariant, varParms)); // 返回值类型和变量
+
+		if (!varParms.isValid())
+		{
+			qDebug() << "error";
+			return;
+		}
+
+		// 应用当前图像参数，从而取消展示的图像参数
+		QMetaObject::invokeMethod(this, strWinName.toStdString().c_str(), Q_ARG(QVariant, varParms));
 	}
-	resizeImage(*m_pImgMat, m_showImgMat, m_showImgMat.cols, m_showImgMat.rows);
+
+	m_varTmpConfig.clear();
 	update();
 }
 
-Q_INVOKABLE void ImageView::grayAdjust(int nVal)
+void ImageView::invokeSetParmsFunc(const QString& strWinName, QVariant varParms)
+{
+	if (strWinName.isEmpty() || !varParms.isValid())
+		return;
+
+	QString strSetFuncName = "set" + strWinName;
+	// 将strWinName首字母置为大写来调用set方法
+	strSetFuncName[3] = strSetFuncName.at(3).toUpper();
+
+	QMetaObject::invokeMethod(this, strSetFuncName.toStdString().c_str(), Q_ARG(QVariant, varParms));
+}
+
+void ImageView::invokeConfigFunc(QString strFuncName, QVariant varParms)
+{
+	if (strFuncName.isEmpty() || !varParms.isValid())
+		return;
+
+	// 调用图像处理函数如：grayValue
+	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_ARG(QVariant, varParms));
+	m_varTmpConfig = varParms;
+}
+
+void ImageView::grayValue(const QVariant& nVal)
 {
 	if (nullptr == m_pImgMat)
 		return;
 
-	m_pImgMat->convertTo(m_transientImgMat, -1, 1, nVal); // alpha=1, beta=brightness
+	m_transientImgMat.convertTo(m_transientImgMat, -1, 1, nVal.toInt()); // alpha=1, beta=brightness
 	resizeImage(m_transientImgMat, m_showImgMat, m_showImgMat.cols, m_showImgMat.rows);
 	update();
-}
-
-bool ImageView::isImageOpened()
-{
-	return m_pImgMat && !m_pImgMat->empty();
 }
 
 void ImageView::initImgPara()
@@ -136,7 +163,7 @@ double ImageView::zoomFactor() const
 	return m_fZoomFactor;
 }
 
-int ImageView::grayValue() const
+QVariant ImageView::grayValue() const
 {
 	return m_nGrayValue;
 }
@@ -173,9 +200,9 @@ void ImageView::setZoomFactor(double fZoomFactor)
 	emit zoomFactorChanged();
 }
 
-void ImageView::setGrayValue(int nGrayValue)
+void ImageView::setGrayValue(QVariant nGrayValue)
 {
-	m_nGrayValue = nGrayValue;
+	m_nGrayValue = nGrayValue.toInt();
 	emit grayValueChanged();
 }
 
@@ -233,8 +260,9 @@ void ImageView::onImageChanged(ImageViewModel* viewModel)
 {
 	initImgPara();
 	m_pImgMat = viewModel->imgMat();
-	resizeImage(*m_pImgMat, m_showImgMat, m_nWinWidth, m_nWinHeight);
-	setZoomFactor(calcZoomFactor(m_showImgMat, *m_pImgMat));
+	m_transientImgMat = m_pImgMat->clone();
+	resizeImage(m_transientImgMat, m_showImgMat, m_nWinWidth, m_nWinHeight);
+	setZoomFactor(calcZoomFactor(m_showImgMat, m_transientImgMat));
 	setBaseOffsetX(calcMidOffsetX(m_showImgMat));
 	setBaseOffsetY(calcMidOffsetY(m_showImgMat));
 	update();

@@ -14,59 +14,69 @@ ApplicationWindow {
     minimumHeight: 300
     title: "Image Processer"
 
-    property Component imgAdjustWin: null
+    property Component imgConfigWin: null
 
-    function createWindow(strQmlPath) {
-        if(null !== imgAdjustWin) {
-            console.log(strQmlPath + "创建失败,已创建其他窗口.")
+    function createWindow(qmlPath) {
+        if(null !== imgConfigWin) {
+            console.log(qmlPath + "创建失败,已创建其他窗口.")
             return;
         }
 
-        imgAdjustWin = Qt.createComponent(strQmlPath);
+        imgConfigWin = Qt.createComponent(qmlPath);
 
-        if (imgAdjustWin.status === Component.Ready) {
-            var componentInstance = imgAdjustWin.createObject();
-            if (componentInstance) {
-                imageView.createTransientImg();
-                componentInstance.show();
+        if (imgConfigWin.status === Component.Ready) {
+            var compIns = imgConfigWin.createObject();
 
-                componentInstance.grayValue = imageView.nGrayValue;
+            if (compIns) {
+                compIns.show();
+
+                initProperty(compIns, compIns.winName);
+
                 // 连接转发的 confirmClicked 信号
-                componentInstance.confirmClicked.connect(function() {
+                compIns.confirmClicked.connect(function() {
                     console.log("Confirm button clicked! (Handled in parent)");
-                    imageView.applyImgConfig(true);
+                    imageView.applyImgConfig(compIns.winName, true);
                 });
 
                 // 连接转发的 cancelClicked 信号
-                componentInstance.cancelClicked.connect(function() {
+                compIns.cancelClicked.connect(function() {
                     console.log("Cancel button clicked! (Handled in parent)");
-                    imageView.applyImgConfig(false);
+                    imageView.applyImgConfig(compIns.winName, false);
                 });
 
                 // 连接调整图像的propertyChanged事件
-                componentInstance.propertyChanged.connect(function(name, value) {
+                compIns.propertyChanged.connect(function(name, value) {
                     propertyChangedEvent(name, value);
 
                 });
 
-                componentInstance.onClosing.connect(function(message) {
-                    imgAdjustWin = null;
+                compIns.onClosing.connect(function(message) {
+                    imgConfigWin = null;
                 });
+
             } else {
-                console.log("无法创建窗口实例: " + strQmlPath);
-                imgAdjustWin = null;
+                console.log("无法创建窗口实例: " + qmlPath);
+                imgConfigWin = null;
             }
-        } else if (imgAdjustWin.status === Component.Error) {
-            console.log("创建组件失败: " + imgAdjustWin.errorString());
-            imgAdjustWin = null;
+        } else if (imgConfigWin.status === Component.Error) {
+            console.log("创建组件失败: " + imgConfigWin.errorString());
+            imgConfigWin = null;
         }
     }
 
-    function propertyChangedEvent(name, value) {
-        console.log("property: " + name + ", value: " + value); // 正确的连接方式
-        if("gray" === name) {
-            imageView.grayAdjust(value);
+    function initProperty(compIns, winName) {
+        if("grayValue" === winName) {
+            compIns.grayValue = imageView.nGrayValue;
         }
+        else {
+            console.log("initProperty failed, " + winName + "cannot found.")
+        }
+    }
+
+    // 调整图像属性时收到的事件
+    function propertyChangedEvent(name, value) {
+        console.log("property: " + name + ", value: " + value);
+        imageView.invokeConfigFunc(name, value);
     }
 
     ImageViewModel {

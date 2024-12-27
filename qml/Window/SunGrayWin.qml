@@ -8,6 +8,7 @@ SunConfigWin {
 
     // alias手动指定双向绑定，将值绑定到滑动条
     property alias grayValue: grayBar.sliderValue
+    property string winName: "grayValue"
 
     Rectangle {
         anchors.fill:parent
@@ -20,7 +21,7 @@ SunConfigWin {
     }
 
     onGrayValueChanged: {
-        propertyChanged("gray", grayValue);
+        propertyChanged("grayValue", grayValue);
     }
 
 

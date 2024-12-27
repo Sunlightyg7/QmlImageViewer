@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.16)
 
-project(ImgProc VERSION 1.0 LANGUAGES CXX)
+project(ImageViewer VERSION 1.0 LANGUAGES CXX)
 
 find_package(Qt5 REQUIRED COMPONENTS Quick)
 
