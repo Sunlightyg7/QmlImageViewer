@@ -1,1 +1,1 @@
-Image processer, uncompleted.
+Image Viewer, uncompleted.
