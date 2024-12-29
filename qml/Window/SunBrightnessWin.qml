@@ -8,7 +8,7 @@ SunConfigWin {
 
     // alias手动指定双向绑定，将值绑定到滑动条
     property alias brightness: sunbar.sliderValue
-    property string winName: "brightness"
+    winName: "brightness"
 
     Rectangle {
         anchors.fill:parent

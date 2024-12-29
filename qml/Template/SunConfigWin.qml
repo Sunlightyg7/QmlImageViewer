@@ -14,6 +14,9 @@ Window {
     signal propertyChanged(string name, variant value)
     // 防止关闭窗口时重复触发cancelClicked
     property bool bWinCloseBtn: true
+    property string winName: ""
+
+    title: winName
 
     SunOk {
         id: sunok

@@ -4,6 +4,7 @@ import QtQuick.Dialogs 1.3
 import Qt.labs.settings 1.1
 import io.root 1.0
 import "qml"
+import "qml/Window"
 
 ApplicationWindow {
     id: rootWindow
@@ -15,6 +16,10 @@ ApplicationWindow {
     title: "Image Processer"
 
     property Component imgConfigWin: null
+
+    SunChangedListWin {
+        id: changedListWin
+    }
 
     function createWindow(qmlPath) {
         if(null !== imgConfigWin) {
@@ -35,13 +40,15 @@ ApplicationWindow {
                 // 连接转发的 confirmClicked 信号
                 compIns.confirmClicked.connect(function() {
                     console.log("Confirm button clicked! (Handled in parent)");
-                    imageView.applyImgConfig(compIns.winName, true);
+                    imageView.applyImgConfig(compIns.winName);
+                    changedListWin.listChanged = imageView.getStepsList();
                 });
 
                 // 连接转发的 cancelClicked 信号
                 compIns.cancelClicked.connect(function() {
                     console.log("Cancel button clicked! (Handled in parent)");
-                    imageView.applyImgConfig(compIns.winName, false);
+                    imageView.cancelImgConfig(compIns.winName);
+                    changedListWin.listChanged = imageView.getStepsList();
                 });
 
                 // 连接调整图像的propertyChanged事件
@@ -77,15 +84,16 @@ ApplicationWindow {
     }
 
     // 调整图像属性时收到的事件
-    function propertyChangedEvent(name, value) {
-        console.log("property: " + name + ", value: " + value);
-        imageView.invokeConfigFunc(name, value);
+    function propertyChangedEvent(propName, value) {
+        console.log("property: " + propName + ", value: " + value);
+        imageView.addImgConfig(propName, value);
+        changedListWin.listChanged = imageView.getStepsList();
     }
 
     ImageViewModel {
         id: viewModel
         onImageChanged: {
-            imageView.onImageChanged(this);
+            imageView.initImage(this);
         }
     }
 

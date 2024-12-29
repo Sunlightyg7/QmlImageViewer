@@ -5,7 +5,7 @@
 #include <QQuickPaintedItem>
 #include "ImageViewModel.h"
 #include "Utils.h"
-#include "UndoRedoQueue.h"
+#include "ChangedQueue.h"
 
 class ImageView : public QQuickPaintedItem
 {
@@ -20,11 +20,19 @@ class ImageView : public QQuickPaintedItem
 public:
 	explicit ImageView(QQuickPaintedItem* parent = nullptr);
 
-	Q_INVOKABLE void onImageChanged(ImageViewModel* viewModel);
+	Q_INVOKABLE void initImage(ImageViewModel* viewModel);
 	Q_INVOKABLE bool isImageOpened();
-	Q_INVOKABLE void zoomIn(double fMouseX, double fMouseY); // 放大
-	Q_INVOKABLE void zoomOut(double fMouseX, double fMouseY); // 缩小
-	Q_INVOKABLE void applyImgConfig(QString strWinName, bool bApply);
+	Q_INVOKABLE void zoomIn(double fMouseX, double fMouseY); 
+	Q_INVOKABLE void zoomOut(double fMouseX, double fMouseY); 
+	Q_INVOKABLE void applyImgConfig(QString strWinName);
+	Q_INVOKABLE void cancelImgConfig(QString strWinName);
+	Q_INVOKABLE void addImgConfig(QString strFuncName, QVariant varParms);
+	Q_INVOKABLE QVariantList getStepsList() const;
+	Q_INVOKABLE int getStepsListSize() const;
+
+	void initImgPara();
+	void resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight);
+	void scaleImage(const cv::Mat& src, cv::Mat& dst, double fFactor); 
 
 	/**
 	 * @brief 应用图像上的修改，并将窗口名和窗口中所有的修改放进修改队列
@@ -32,15 +40,7 @@ public:
 	 * @param [in] strWinName 窗口名，如gray
 	 * @param [in] mParms 包含窗口中所有的修改
 	 */
-	Q_INVOKABLE void invokeSetParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms);
-
-	/**
-	 * @brief 恢复图像上的修改
-	 * 
-	 * @param [in] strWinName 窗口名，如gray
-	 * @param [in] mParms 包含窗口中所有的修改，用来撤回
-	 */
-	Q_INVOKABLE void invokeRestoreParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms);
+	void invokeSetParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms);
 
 	/**
 	 * @brief 根据strFuncName调用相应的图像调整函数
@@ -48,16 +48,12 @@ public:
 	 * @param [in] strFuncName 图像调整函数名，如gray，动态调用gray函数
 	 * @param [in] varParms 新的参数
 	 */
-	Q_INVOKABLE void invokeConfigFunc(QString strFuncName, QVariant varParms);
+	void invokeConfigFunc(const QString& strFuncName, const QVariant& varParms);
 
 	// ------------图像处理------------
 	Q_INVOKABLE void gray(const QVariant& nVal, cv::Mat* pDstMat);
 	Q_INVOKABLE void brightness(const QVariant& nVal, cv::Mat* pDstMat);
 	// -------------------------------
-
-	void initImgPara();
-	void resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight);
-	void scaleImage(const cv::Mat& src, cv::Mat& dst, double fFactor); // 缩放图片
 
 	// -----------get-----------
 	int winHeight() const;
@@ -83,19 +79,21 @@ public:
 	int calcMidOffsetY(const cv::Mat& src);
 	double calcZoomFactor(const cv::Mat& scale, const cv::Mat& src);
 	void calcScaleOffset(double fMouseX, double fMouseY, double fOldZoom, double fNewZoom);
+	int calcScaledNumber(int nOldNum1, int nOldNum2, int nNewNum);
 
-	int getScaledNumber(int nOldNum1, int nOldNum2, int nNewNum);
+public slots:
+	void onStepsChanged();
 
 protected:
 	virtual void paint(QPainter* pPainter) override;
 
 signals:
+	//void imageChanged();
 	void winHeightChanged();
 	void winWidthChanged();
 	void baseOffsetXChanged();
 	void baseOffsetYChanged();
 	void zoomFactorChanged();
-	void imageChanged();
 	void grayChanged();
 	void brightnessChanged();
 
@@ -116,14 +114,14 @@ private:
 	// ---------------------------
 
 	// 临时保存的图像调整参数<参数名，参数值>
-	QMap<QString, QVariant> m_mTmpConfig;
+	QMap<QString, QVariant> m_mOldConfig;
+	QMap<QString, QVariant> m_mNewConfig;
 
 	// 图像是否调整过至少过一次
 	bool m_bChanged = false;
 	std::shared_ptr<cv::Mat> m_pImgMat = nullptr;
-	cv::Mat m_transientImgMat;
 	cv::Mat m_showImgMat;
-	UndoRedoQueue m_qUndoRedo;
+	ChangedQueue m_qChanged;
 };
 
 #endif // IMAGEVIEWMODEL_H

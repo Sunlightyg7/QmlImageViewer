@@ -6,5 +6,6 @@
         <file>qml/Window/SunGrayWin.qml</file>
         <file>qml/Template/SunConfigWin.qml</file>
         <file>qml/Window/SunBrightnessWin.qml</file>
+        <file>qml/Window/SunChangedListWin.qml</file>
     </qresource>
 </RCC>

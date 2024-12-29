@@ -6,13 +6,14 @@ using namespace std;
 
 ImageView::ImageView(QQuickPaintedItem* parent) : QQuickPaintedItem(parent)
 {
+	//connect(this, &ImageView::imageChanged, this, &ImageView::onImageChanged);
+	connect(&m_qChanged, &ChangedQueue::stepsChanged, this, &ImageView::onStepsChanged);
 }
 
-void ImageView::onImageChanged(ImageViewModel* viewModel)
+void ImageView::initImage(ImageViewModel* viewModel)
 {
 	initImgPara();
 	m_pImgMat = viewModel->imgMat();
-	m_transientImgMat = m_pImgMat->clone();
 	resizeImage(*m_pImgMat, m_showImgMat, m_nWinWidth, m_nWinHeight);
 	setZoomFactor(calcZoomFactor(m_showImgMat, *m_pImgMat));
 	setBaseOffsetX(calcMidOffsetX(m_showImgMat));
@@ -30,11 +31,11 @@ void ImageView::zoomIn(double fMouseX, double fMouseY)
 	if (nullptr == m_pImgMat)
 		return;
 
-	double fOldZoom = m_fZoomFactor;
-	setZoomFactor(m_fZoomFactor * 1.1);
-	calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
-	scaleImage(m_transientImgMat, m_showImgMat, m_fZoomFactor);
-	update();
+	//double fOldZoom = m_fZoomFactor;
+	//setZoomFactor(m_fZoomFactor * 1.1);
+	//calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
+	//scaleImage(*m_pImgMat, m_showImgMat, m_fZoomFactor);
+	//update();
 }
 
 void ImageView::zoomOut(double fMouseX, double fMouseY)
@@ -42,31 +43,105 @@ void ImageView::zoomOut(double fMouseX, double fMouseY)
 	if (nullptr == m_pImgMat)
 		return;
 
-	double fOldZoom = m_fZoomFactor;
-	setZoomFactor(m_fZoomFactor * 0.9);
-	calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
-	scaleImage(m_transientImgMat, m_showImgMat, m_fZoomFactor);
-	update();
+	//double fOldZoom = m_fZoomFactor;
+	//setZoomFactor(m_fZoomFactor * 0.9);
+	//calcScaleOffset(fMouseX, fMouseY, fOldZoom, m_fZoomFactor);
+	//scaleImage(*m_pImgMat, m_showImgMat, m_fZoomFactor);
+	//update();
 }
 
-void ImageView::applyImgConfig(QString strWinName, bool bApply)
+void ImageView::applyImgConfig(QString strWinName)
 {
 	if (nullptr == m_pImgMat)
 		return;
 
-	// 应用当前图像调整
-	if (bApply)
+	invokeSetParmsFunc(strWinName, m_mNewConfig);
+	m_mNewConfig.clear();
+	m_mOldConfig.clear();
+	update();
+}
+
+void ImageView::cancelImgConfig(QString strWinName)
+{
+	if (nullptr == m_pImgMat)
+		return;
+
+	invokeSetParmsFunc(strWinName, m_mOldConfig);
+
+	for (auto it = m_mOldConfig.begin(); it != m_mOldConfig.end(); ++it)
 	{
-		invokeSetParmsFunc(strWinName, m_mTmpConfig);
-	}
-	// 取消当前展示的图像调整
-	else
-	{
-		invokeRestoreParmsFunc(strWinName, m_mTmpConfig);
+		const QString& strFuncName = it.key();
+		m_qChanged.addOrUpdateStep({ strFuncName, it.value(), 0 });
 	}
 
-	m_mTmpConfig.clear();
+	m_mNewConfig.clear();
+	m_mOldConfig.clear();
 	update();
+}
+
+void ImageView::addImgConfig(QString strFuncName, QVariant varParms)
+{
+	if (nullptr == m_pImgMat || strFuncName.isEmpty() || !varParms.isValid())
+		return;
+
+	Step oldStep = m_qChanged.getStep(strFuncName);
+	m_qChanged.addOrUpdateStep({ strFuncName, varParms, 0 });
+	m_mNewConfig.insert(strFuncName, varParms);
+
+	QVariant varRet;
+	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_RETURN_ARG(QVariant, varRet));
+	m_mOldConfig.insert(strFuncName, varRet);
+}
+
+QVariantList ImageView::getStepsList() const
+{
+	return m_qChanged.getStepsList();
+}
+
+int ImageView::getStepsListSize() const
+{
+	return m_qChanged.size();
+}
+
+void ImageView::initImgPara()
+{
+	m_fBaseOffsetX = 0.0;
+	m_fBaseOffsetY = 0.0;
+	m_fZoomOffsetX = 0.0;
+	m_fZoomOffsetY = 0.0;
+	m_fZoomFactor = 0.0;
+	m_nGray = 1;
+	m_nBrightness = 0;
+	m_pImgMat = nullptr;
+	m_showImgMat = Mat();
+	m_qChanged.clear();
+	m_bChanged = false;
+	m_mNewConfig.clear();
+}
+
+void ImageView::resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight)
+{
+	if (src.empty() || 0 == nWidth || 0 == nHeight)
+		return;
+
+	// 宽高比
+	double fImgFactor = static_cast<double>(src.cols) / src.rows;
+	double fShowFactor = static_cast<double>(nWidth) / nHeight;
+
+	// 横向拉伸窗口
+	if (fShowFactor > fImgFactor)
+		cv::resize(src, dst, cv::Size(calcScaledNumber(src.cols, src.rows, nHeight), nHeight));
+	// 纵向拉伸窗口
+	else
+		cv::resize(src, dst, cv::Size(nWidth, calcScaledNumber(src.rows, src.cols, nWidth)));
+}
+
+void ImageView::scaleImage(const cv::Mat& src, cv::Mat& dst, double factor)
+{
+	if (src.empty())
+		return;
+
+	cv::resize(src, dst, cv::Size(), factor, factor);
 }
 
 void ImageView::invokeSetParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms)
@@ -84,62 +159,15 @@ void ImageView::invokeSetParmsFunc(const QString& strWinName, const QMap<QString
 
 		QMetaObject::invokeMethod(this, strSetFuncName.toStdString().c_str(), Q_ARG(QVariant, it.value()));
 	}
-
-	m_qUndoRedo.push(m_mTmpConfig);
 }
 
-Q_INVOKABLE void ImageView::invokeRestoreParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms)
-{
-	if (strWinName.isEmpty() || mParms.empty())
-		return;
-
-	for (auto it = mParms.begin(); it != mParms.end(); ++it)
-	{
-		const QString& strFuncName = it.key();
-		QVariant varParms;
-		// 获取当前已应用的图像参数，如调用gray()
-		QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_RETURN_ARG(QVariant, varParms)); // 返回值类型和变量
-
-		if (!varParms.isValid())
-			qDebug() << "error";
-
-		// 调用图像处理函数，从而取消展示的图像调整，如调用gray(const QVariant& nVal, const cv::Mat& pDstMat)
-		QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_ARG(QVariant, varParms), Q_ARG(cv::Mat*, &m_showImgMat));
-	}
-	scaleImage(m_showImgMat, m_showImgMat, m_fZoomFactor);
-	update();
-}
-
-void ImageView::invokeConfigFunc(QString strFuncName, QVariant varParms)
+void ImageView::invokeConfigFunc(const QString& strFuncName, const QVariant& varParms)
 {
 	if (strFuncName.isEmpty() || !varParms.isValid())
 		return;
 
-	// 如果有修改记录，则从原始图像开始应用
-	if (m_qUndoRedo.size())
-		m_transientImgMat = m_pImgMat->clone();
-
-	QMap<QString, QVariant> mIncorpConfig = m_qUndoRedo.incorpUndoStack();
-
-	// 应用修改列表中的图像调整到m_transientImgMat，然后再将最新的修改应用到m_showImgMat显示
-	for (auto it = mIncorpConfig.begin(); it != mIncorpConfig.end(); ++it)
-	{
-		const QString& strAppliedFuncName = it.key();
-
-		// 当调用-10图像处理，再调用+20图像处理，图像也不会恢复原状，所以同样的图像处理修改记录跳过
-		if (strAppliedFuncName == strFuncName)
-			continue;
-
-		// 调用图像处理函数如：gray(const QVariant& nVal, const cv::Mat& pDstMat)
-		QMetaObject::invokeMethod(this, strAppliedFuncName.toStdString().c_str(), Q_ARG(QVariant, it.value()), Q_ARG(cv::Mat*, &m_transientImgMat));
-	}
-
-	// 调用当前调整的图像处理函数，并映射到m_showImgMat上显示
-	Mat tmpMat;
-	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_ARG(QVariant, varParms), Q_ARG(cv::Mat*, &tmpMat));
-	resizeImage(tmpMat, m_showImgMat, m_showImgMat.cols, m_showImgMat.rows);
-	m_mTmpConfig.insert(strFuncName, varParms);
-	update();
+	//调用图像处理函数如：gray(const QVariant& nVal, const cv::Mat& pDstMat)
+	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_ARG(QVariant, varParms), Q_ARG(cv::Mat*, &m_showImgMat));
 }
 
 void ImageView::gray(const QVariant& nVal, cv::Mat* pDstMat)
@@ -147,7 +175,19 @@ void ImageView::gray(const QVariant& nVal, cv::Mat* pDstMat)
 	if (nullptr == m_pImgMat)
 		return;
 
-	m_transientImgMat.convertTo(*pDstMat, -1, 1, nVal.toInt()); // alpha=1, beta=brightness
+	int gamma = nVal.toInt();
+	CV_Assert(gamma > 0);  // 确保 gamma > 0
+
+	// 创建查找表，存储每个像素的 gamma 校正值
+	cv::Mat lookupTable(1, 256, CV_8U);
+
+	// 计算 gamma 曲线
+	for (int i = 0; i < 256; i++) {
+		lookupTable.at<uchar>(i) = cv::saturate_cast<uchar>(pow(i / 255.0, gamma) * 255.0);
+	}
+
+	// 应用查找表对图像进行 Gamma 校正
+	cv::LUT(m_showImgMat, lookupTable, *pDstMat);
 }
 
 void ImageView::brightness(const QVariant& nVal, cv::Mat* pDstMat)
@@ -155,49 +195,7 @@ void ImageView::brightness(const QVariant& nVal, cv::Mat* pDstMat)
 	if (nullptr == m_pImgMat)
 		return;
 
-	m_transientImgMat.convertTo(*pDstMat, -1, 1, nVal.toInt()); // alpha=1, beta=brightness
-}
-
-void ImageView::initImgPara()
-{
-	m_fBaseOffsetX = 0.0;
-	m_fBaseOffsetY = 0.0;
-	m_fZoomOffsetX = 0.0;
-	m_fZoomOffsetY = 0.0;
-	m_fZoomFactor = 0.0;
-	m_nGray = 0;
-	m_nBrightness = 0;
-	m_pImgMat = nullptr;
-	m_transientImgMat = Mat();
-	m_showImgMat = Mat();
-	m_qUndoRedo.clear();
-	m_bChanged = false;
-	m_mTmpConfig.clear();
-}
-
-void ImageView::resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight)
-{
-	if (src.empty() || 0 == nWidth || 0 == nHeight)
-		return;
-
-	// 宽高比
-	double fImgFactor = static_cast<double>(src.cols) / src.rows;
-	double fShowFactor = static_cast<double>(nWidth) / nHeight;
-
-	// 横向拉伸窗口
-	if (fShowFactor > fImgFactor)
-		cv::resize(src, dst, cv::Size(getScaledNumber(src.cols, src.rows, nHeight), nHeight));
-	// 纵向拉伸窗口
-	else
-		cv::resize(src, dst, cv::Size(nWidth, getScaledNumber(src.rows, src.cols, nWidth)));
-}
-
-void ImageView::scaleImage(const cv::Mat& src, cv::Mat& dst, double factor)
-{
-	if (src.empty())
-		return;
-
-	cv::resize(src, dst, cv::Size(), factor, factor);
+	m_showImgMat.convertTo(*pDstMat, -1, 1, nVal.toInt()); // alpha=1, beta=brightness
 }
 
 int ImageView::winHeight() const
@@ -305,9 +303,24 @@ void ImageView::calcScaleOffset(double fMouseX, double fMouseY, double fOldZoom,
 	m_fZoomOffsetY = fMouseY - fImageY * fNewZoom - m_fBaseOffsetY;
 }
 
-int ImageView::getScaledNumber(int nOldNum1, int nOldNum2, int nNewNum)
+int ImageView::calcScaledNumber(int nOldNum1, int nOldNum2, int nNewNum)
 {
 	return static_cast<int>(std::round(static_cast<double>(nOldNum1) / nOldNum2 * nNewNum));
+}
+
+void ImageView::onStepsChanged()
+{
+	// TODO: 每次看看能不能合并多个StepsChanged信号
+	m_showImgMat = m_pImgMat->clone();
+
+	for (auto it = m_qChanged.begin(); it != m_qChanged.end(); it++)
+	{
+		auto&& [szFuncName, varValue, nPriority] = *it;
+		invokeConfigFunc(szFuncName, varValue);
+		qDebug() << "func name: " << szFuncName << ", value: " << varValue << ", priority: " << nPriority;
+	}
+	resizeImage(m_showImgMat, m_showImgMat, m_nWinWidth, m_nWinHeight);
+	update();
 }
 
 void ImageView::paint(QPainter* pPainter)
