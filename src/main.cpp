@@ -4,31 +4,37 @@
 #include "ImageViewModel.h"
 #include "ImageView.h"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-#endif
+	// 1. 全局缩放使能
+	QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+	// 2. 适配非整数倍缩放
+	QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 
-    // 创建 QGuiApplication 对象
-    QGuiApplication app(argc, argv);
+	QGuiApplication app(argc, argv);
 
-    // 创建 QML 引擎
-    QQmlApplicationEngine engine;
+	// 3. 适配字体渲染 hinting
+	QFont font = app.font();
+	font.setStyleStrategy(QFont::PreferAntialias);
+	font.setHintingPreference(QFont::PreferFullHinting);
+	QGuiApplication::setFont(font);
 
-    app.setOrganizationName("Some Company");
-    app.setOrganizationDomain("somecompany.com");
-    app.setApplicationName("Amazing Application");
-    qmlRegisterType<ImageView>("io.root", 1, 0, "ImageView");
-    qmlRegisterType<ImageViewModel>("io.root", 1, 0, "ImageViewModel");
+	// 创建 QML 引擎
+	QQmlApplicationEngine engine;
 
-    // 加载 QML 文件，显示界面
-    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+	app.setOrganizationName("Some Company");
+	app.setOrganizationDomain("somecompany.com");
+	app.setApplicationName("Amazing Application");
+	qmlRegisterType<ImageView>("io.root", 1, 0, "ImageView");
+	qmlRegisterType<ImageViewModel>("io.root", 1, 0, "ImageViewModel");
 
-    // 如果 QML 文件没有成功加载，则退出
-    if (engine.rootObjects().isEmpty())
-        return -1;
+	// 加载 QML 文件，显示界面
+	engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
-    // 启动应用程序
-    return app.exec();
+	// 如果 QML 文件没有成功加载，则退出
+	if (engine.rootObjects().isEmpty())
+		return -1;
+
+	// 启动应用程序
+	return app.exec();
 }
