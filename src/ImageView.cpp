@@ -76,6 +76,7 @@ void ImageView::cancelImgConfig(QString strWinName)
 
 	m_mNewConfig.clear();
 	m_mOldConfig.clear();
+	emit changedListChanged();
 	update();
 }
 
@@ -85,12 +86,32 @@ void ImageView::addImgConfig(QString strFuncName, QVariant varParms)
 		return;
 
 	Step oldStep = m_qChanged.getStep(strFuncName);
-	m_qChanged.addOrUpdateStep({ strFuncName, varParms, 0 });
+	m_qChanged.addOrUpdateStep({ strFuncName, varParms, 0, 0 });
 	m_mNewConfig.insert(strFuncName, varParms);
 
 	QVariant varRet;
 	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_RETURN_ARG(QVariant, varRet));
 	m_mOldConfig.insert(strFuncName, varRet);
+
+	emit changedListChanged();
+}
+
+void ImageView::removeListItem(int nIndex)
+{
+	if (m_qChanged.removeStep(nIndex))
+		emit changedListChanged();
+}
+
+void ImageView::moveListItem(int nFrom, int nTo)
+{
+	if (m_qChanged.moveStep(nFrom, nTo))
+		emit changedListChanged();
+}
+
+void ImageView::selectedListItem(int nIndex)
+{
+	if (m_qChanged.stepSelected(nIndex))
+		emit changedListChanged();
 }
 
 QVariantList ImageView::getStepsList() const
@@ -117,6 +138,7 @@ void ImageView::initImgPara()
 	m_qChanged.clear();
 	m_bChanged = false;
 	m_mNewConfig.clear();
+	m_mOldConfig.clear();
 }
 
 void ImageView::resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight)
@@ -315,9 +337,9 @@ void ImageView::onStepsChanged()
 
 	for (auto it = m_qChanged.begin(); it != m_qChanged.end(); it++)
 	{
-		auto&& [szFuncName, varValue, nPriority] = *it;
+		auto&& [szFuncName, varValue, nPriority, bSelected] = *it;
 		invokeConfigFunc(szFuncName, varValue);
-		qDebug() << "func name: " << szFuncName << ", value: " << varValue << ", priority: " << nPriority;
+		m_pLogger->info("func name: {}, value: {}, priority: {}", szFuncName.toStdString(), varValue.toString().toStdString(), nPriority);
 	}
 	resizeImage(m_showImgMat, m_showImgMat, m_nWinWidth, m_nWinHeight);
 	update();

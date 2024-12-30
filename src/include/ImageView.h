@@ -6,6 +6,9 @@
 #include "ImageViewModel.h"
 #include "Utils.h"
 #include "ChangedQueue.h"
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h> // 用于彩色输出控制台日志
+#include <spdlog/async.h> // 用于异步日志记录（如果使用多线程）
 
 class ImageView : public QQuickPaintedItem
 {
@@ -27,6 +30,9 @@ public:
 	Q_INVOKABLE void applyImgConfig(QString strWinName);
 	Q_INVOKABLE void cancelImgConfig(QString strWinName);
 	Q_INVOKABLE void addImgConfig(QString strFuncName, QVariant varParms);
+	Q_INVOKABLE void removeListItem(int nIndex);
+	Q_INVOKABLE void moveListItem(int nFrom, int nTo);
+	Q_INVOKABLE void selectedListItem(int nIndex);
 	Q_INVOKABLE QVariantList getStepsList() const;
 	Q_INVOKABLE int getStepsListSize() const;
 
@@ -89,6 +95,7 @@ protected:
 
 signals:
 	//void imageChanged();
+	void changedListChanged();
 	void winHeightChanged();
 	void winWidthChanged();
 	void baseOffsetXChanged();
@@ -104,13 +111,13 @@ private:
 	double m_fBaseOffsetY = 0.0;
 	double m_fZoomOffsetX = 0.0;
 	double m_fZoomOffsetY = 0.0;
+	double m_fZoomFactor = 0.0;
 	double m_fMinZoom = 0.01; // 0.01 = 1%
 	double m_fMaxZoom = 5.0;
-	double m_fZoomFactor = 0.0;
 
 	// ---------图像参数-----------
-	int m_nGray = 0;
-	int m_nBrightness = 0;
+	int m_nGray;
+	int m_nBrightness;
 	// ---------------------------
 
 	// 临时保存的图像调整参数<参数名，参数值>
@@ -122,6 +129,7 @@ private:
 	std::shared_ptr<cv::Mat> m_pImgMat = nullptr;
 	cv::Mat m_showImgMat;
 	ChangedQueue m_qChanged;
+	inline static std::shared_ptr<spdlog::logger> m_pLogger = spdlog::stdout_color_mt("ImageView");
 };
 
 #endif // IMAGEVIEWMODEL_H

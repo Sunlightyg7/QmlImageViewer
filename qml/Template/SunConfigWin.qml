@@ -5,9 +5,9 @@ import "../Control"
 
 Window {
     width: 400
-    flags: Qt.Window|Qt.WindowStaysOnTopHint|Qt.WindowTitleHint|
-           Qt.WindowSystemMenuHint|Qt.WindowMinMaxButtonsHint|
-           Qt.WindowCloseButtonHint|Qt.WindowFullscreenButtonHint
+    // flags: Qt.Window|Qt.WindowStaysOnTopHint|Qt.WindowTitleHint|
+    //        Qt.WindowSystemMenuHint|Qt.WindowMinMaxButtonsHint|
+    //        Qt.WindowCloseButtonHint|Qt.WindowFullscreenButtonHint
 
     signal confirmClicked()
     signal cancelClicked()

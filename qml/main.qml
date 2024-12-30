@@ -19,6 +19,23 @@ ApplicationWindow {
 
     SunChangedListWin {
         id: changedListWin
+
+        Component.onCompleted: {
+            changedListWin.x = rootWindow.x + rootWindow.width - width
+            changedListWin.y = rootWindow.y + rootWindow.height - height - rootWindow.footer.height
+        }
+
+        onListItemRemove: {
+            imageView.removeListItem(index);
+        }
+
+        onListItemMove: {
+            imageView.moveListItem(from, to);
+        }
+
+        onListItemSelect: {
+            imageView.selectedListItem(index);
+        }
     }
 
     function createWindow(qmlPath) {
@@ -30,7 +47,7 @@ ApplicationWindow {
         imgConfigWin = Qt.createComponent(qmlPath);
 
         if (imgConfigWin.status === Component.Ready) {
-            var compIns = imgConfigWin.createObject();
+            var compIns = imgConfigWin.createObject(rootWindow);
 
             if (compIns) {
                 compIns.show();
@@ -41,14 +58,12 @@ ApplicationWindow {
                 compIns.confirmClicked.connect(function() {
                     console.log("Confirm button clicked! (Handled in parent)");
                     imageView.applyImgConfig(compIns.winName);
-                    changedListWin.listChanged = imageView.getStepsList();
                 });
 
                 // 连接转发的 cancelClicked 信号
                 compIns.cancelClicked.connect(function() {
                     console.log("Cancel button clicked! (Handled in parent)");
                     imageView.cancelImgConfig(compIns.winName);
-                    changedListWin.listChanged = imageView.getStepsList();
                 });
 
                 // 连接调整图像的propertyChanged事件
@@ -85,9 +100,8 @@ ApplicationWindow {
 
     // 调整图像属性时收到的事件
     function propertyChangedEvent(propName, value) {
-        console.log("property: " + propName + ", value: " + value);
+        //console.log("property: " + propName + ", value: " + value);
         imageView.addImgConfig(propName, value);
-        changedListWin.listChanged = imageView.getStepsList();
     }
 
     ImageViewModel {
@@ -150,6 +164,17 @@ ApplicationWindow {
                 text: qsTr("亮度")
                 onTriggered: {
                     createWindow("qml/Window/SunBrightnessWin.qml");
+                }
+            }
+        }
+
+        Menu {
+            title: qsTr("窗口")
+
+            MenuItem {
+                text: qsTr("修改记录")
+                onTriggered: {
+                    changedListWin.visible = true;
                 }
             }
         }
@@ -216,6 +241,10 @@ ApplicationWindow {
 
             onHeightChanged: {
                 imageView.nWinHeight = height;
+            }
+
+            onChangedListChanged: {
+                changedListWin.listChanged = imageView.getStepsList();
             }
         }
     }

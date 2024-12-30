@@ -10,6 +10,14 @@ add_compile_options("/EHsc")
 
 message(STATUS ${OPENCV_LIB_DIR_PATH})
 
+include(FetchContent)
+
+FetchContent_Declare(
+    spdlog
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog-1.15.0.tar.gz
+)
+FetchContent_MakeAvailable(spdlog)
+
 file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 file(GLOB HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/src/include/*.h)
 file(GLOB RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.qrc)
@@ -25,5 +33,5 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${OPENCV_LIB_DIR_PATH})
-target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick opencv_world500d)
+target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick opencv_world500d spdlog::spdlog)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/include)

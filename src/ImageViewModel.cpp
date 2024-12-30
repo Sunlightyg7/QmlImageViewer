@@ -16,7 +16,7 @@ void ImageViewModel::openImage(QString filePath)
 
 	setImgMat(cv::imread(filePath.toLocal8Bit().toStdString(), cv::IMREAD_COLOR_RGB));
 	if (m_pImgMat->empty())
-		std::cout << "Error: Could not open or find the imgMat!" << std::endl;
+		m_pLogger->error("Error: Could not open or find the imgMat!");
 }
 
 std::shared_ptr<cv::Mat> ImageViewModel::imgMat() const
@@ -28,7 +28,7 @@ void ImageViewModel::setImgMat(const cv::Mat& imgMat)
 {
 	if (imgMat.empty())
 	{
-		std::cout << "Error: Could not open or find the imgMat!" << std::endl;
+		m_pLogger->error("Error: Could not open or find the imgMat!");
 		return;
 	}
 

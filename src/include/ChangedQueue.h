@@ -11,6 +11,7 @@ struct Step
     QString szFuncName;
     QVariant varValue;
     unsigned short nPriority; 
+    bool bSelected;
 };
 
 class ChangedQueue : public QObject
@@ -23,13 +24,17 @@ public:
     void addOrUpdateStep(const Step& step);
 
     // 删除调整步骤
-    void removeStep(const QString& szFuncName);
+    bool removeStep(const QString& szFuncName);
+
+    bool removeStep(int nIndex);
 
     // 移动调整步骤的位置
-    void moveStep(int nFromIndex, int nToIndex);
+    bool moveStep(int nFromIndex, int nToIndex);
 
     // 调整步骤的优先级
-    void adjustPriority(const QString& szFuncName, int nNewPriority);
+    bool adjustPriority(const QString& szFuncName, int nNewPriority);
+
+    bool stepSelected(int nIndex);
 
     Step getStep(const QString& szFuncName) const;
     QList<Step> getSteps() const { return m_listSteps; }

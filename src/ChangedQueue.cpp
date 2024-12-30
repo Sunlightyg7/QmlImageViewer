@@ -28,7 +28,7 @@ void ChangedQueue::addOrUpdateStep(const Step& step)
 	emit stepsChanged();
 }
 
-void ChangedQueue::removeStep(const QString& szFuncName)
+bool ChangedQueue::removeStep(const QString& szFuncName)
 {
 	auto it = std::find_if(m_listSteps.begin(), m_listSteps.end(),
 		[&szFuncName](const Step& s)
@@ -40,21 +40,35 @@ void ChangedQueue::removeStep(const QString& szFuncName)
 	{
 		m_listSteps.erase(it);
 		emit stepsChanged();
+		return true;
 	}
+
+	return false;
 }
 
-void ChangedQueue::moveStep(int nFromIndex, int nToIndex)
+bool ChangedQueue::removeStep(int nIndex)
+{
+	if (nIndex < 0 || nIndex >= m_listSteps.size())
+		return false;
+
+	m_listSteps.erase(m_listSteps.begin() + nIndex);
+	emit stepsChanged();
+	return true;
+}
+
+bool ChangedQueue::moveStep(int nFromIndex, int nToIndex)
 {
 	if (nFromIndex < 0 || nFromIndex >= m_listSteps.size() || nToIndex < 0 || nToIndex >= m_listSteps.size())
-		return;
+		return false;
 
 	Step step = m_listSteps[nFromIndex];
 	m_listSteps.erase(m_listSteps.begin() + nFromIndex);
 	m_listSteps.insert(m_listSteps.begin() + nToIndex, step);
 	emit stepsChanged();
+	return true;
 }
 
-void ChangedQueue::adjustPriority(const QString& szFuncName, int nNewPriority)
+bool ChangedQueue::adjustPriority(const QString& szFuncName, int nNewPriority)
 {
 	auto it = std::find_if(m_listSteps.begin(), m_listSteps.end(),
 		[&szFuncName](const Step& s)
@@ -72,7 +86,25 @@ void ChangedQueue::adjustPriority(const QString& szFuncName, int nNewPriority)
 			});
 
 		emit stepsChanged();
+		return true;
 	}
+
+	return false;
+}
+
+bool ChangedQueue::stepSelected(int nIndex)
+{
+	if (nIndex < 0 || nIndex >= m_listSteps.size())
+		return false;
+
+	for (auto it = m_listSteps.begin(); it != m_listSteps.end(); it++)
+	{
+		it->bSelected = false;
+	}
+
+	m_listSteps[nIndex].bSelected = !m_listSteps[nIndex].bSelected;
+	emit stepsChanged();
+	return true;
 }
 
 Step ChangedQueue::getStep(const QString& szFuncName) const
@@ -98,6 +130,7 @@ QVariantList ChangedQueue::getStepsList() const
 		stepMap["szFuncName"] = step.szFuncName;
 		stepMap["varValue"] = step.varValue;
 		stepMap["nPriority"] = step.nPriority;
+		stepMap["bSelected"] = step.bSelected;
 		qmlSteps.append(stepMap);
 	}
 	return qmlSteps;
