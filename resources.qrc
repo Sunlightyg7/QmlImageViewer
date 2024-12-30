@@ -3,7 +3,7 @@
         <file alias="main.qml">qml/main.qml</file>
         <file>qml/Control/SunBar.qml</file>
         <file>qml/Control/SunOk.qml</file>
-        <file>qml/Window/SunGrayWin.qml</file>
+        <file>qml/Window/SunGammaWin.qml</file>
         <file>qml/Template/SunConfigWin.qml</file>
         <file>qml/Window/SunBrightnessWin.qml</file>
         <file>qml/Window/SunChangedListWin.qml</file>

@@ -87,11 +87,11 @@ ApplicationWindow {
     }
 
     function initProperty(compIns, winName) {
-        if("gray" === winName) {
-            compIns.gray = imageView.nGray;
+        if("gamma" === winName) {
+            compIns.gamma = imageView.gamma;
         }
         else if("brightness" === winName) {
-            compIns.brightness = imageView.nBrightness;
+            compIns.brightness = imageView.brightness;
         }
         else {
             console.log("initProperty failed, " + winName + " cannot found.")
@@ -155,9 +155,9 @@ ApplicationWindow {
             title: qsTr("调整")
 
             MenuItem {
-                text: qsTr("灰度")
+                text: qsTr("gamma")
                 onTriggered: {
-                    createWindow("qml/Window/SunGrayWin.qml");
+                    createWindow("qml/Window/SunGammaWin.qml");
                 }
             }
             MenuItem {
@@ -220,8 +220,8 @@ ApplicationWindow {
                         // 计算偏移
                         var dx = mouseArea.mouseX - fOriX
                         var dy = mouseArea.mouseY - fOriY
-                        imageView.fBaseOffsetX += dx
-                        imageView.fBaseOffsetY += dy
+                        imageView.baseOffsetX += dx
+                        imageView.baseOffsetY += dy
                         // 更新初始位置
                         fOriX = mouseArea.mouseX
                         fOriY = mouseArea.mouseY
@@ -231,16 +231,16 @@ ApplicationWindow {
 
             Component.onCompleted: {
                 console.log("Window size onCompleted: " + parent.width + "x" + parent.height);
-                imageView.nWinWidth = width;
-                imageView.nWinHeight = height;
+                imageView.winWidth = width;
+                imageView.winHeight = height;
             }
 
             onWidthChanged: {
-                imageView.nWinWidth = width;
+                imageView.winWidth = width;
             }
 
             onHeightChanged: {
-                imageView.nWinHeight = height;
+                imageView.winHeight = height;
             }
 
             onChangedListChanged: {
@@ -257,7 +257,7 @@ ApplicationWindow {
         Text {
             anchors.centerIn: parent
             color: "white"
-            text: "Scale: " + Math.round(imageView.fZoomFactor * 100) + "%"
+            text: "Scale: " + Math.round(imageView.zoomFactor * 100) + "%"
         }
     }
 

@@ -8,7 +8,7 @@
 
 struct Step 
 {
-    QString szFuncName;
+    QString szVariableName; // 变量名如：gamma、brightness
     QVariant varValue;
     unsigned short nPriority; 
     bool bSelected;
@@ -24,7 +24,7 @@ public:
     void addOrUpdateStep(const Step& step);
 
     // 删除调整步骤
-    bool removeStep(const QString& szFuncName);
+    bool removeStep(const QString& szVariableName);
 
     bool removeStep(int nIndex);
 
@@ -32,11 +32,12 @@ public:
     bool moveStep(int nFromIndex, int nToIndex);
 
     // 调整步骤的优先级
-    bool adjustPriority(const QString& szFuncName, int nNewPriority);
+    bool adjustPriority(const QString& szVariableName, int nNewPriority);
 
     bool stepSelected(int nIndex);
 
-    Step getStep(const QString& szFuncName) const;
+    Step getStep(const QString& szVariableName) const;
+    Step getStep(int nIndex) const;
     QList<Step> getSteps() const { return m_listSteps; }
     QVariantList getStepsList() const;
     int size () const { return m_listSteps.size(); }

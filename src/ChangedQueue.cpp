@@ -12,7 +12,7 @@ void ChangedQueue::addOrUpdateStep(const Step& step)
 	auto it = std::find_if(m_listSteps.begin(), m_listSteps.end(),
 		[&step](const Step& s)
 		{
-			return s.szFuncName == step.szFuncName;
+			return s.szVariableName == step.szVariableName;
 		});
 
 	if (it != m_listSteps.end())
@@ -28,12 +28,12 @@ void ChangedQueue::addOrUpdateStep(const Step& step)
 	emit stepsChanged();
 }
 
-bool ChangedQueue::removeStep(const QString& szFuncName)
+bool ChangedQueue::removeStep(const QString& szVariableName)
 {
 	auto it = std::find_if(m_listSteps.begin(), m_listSteps.end(),
-		[&szFuncName](const Step& s)
+		[&szVariableName](const Step& s)
 		{
-			return s.szFuncName == szFuncName;
+			return s.szVariableName == szVariableName;
 		});
 
 	if (it != m_listSteps.end())
@@ -68,12 +68,12 @@ bool ChangedQueue::moveStep(int nFromIndex, int nToIndex)
 	return true;
 }
 
-bool ChangedQueue::adjustPriority(const QString& szFuncName, int nNewPriority)
+bool ChangedQueue::adjustPriority(const QString& szVariableName, int nNewPriority)
 {
 	auto it = std::find_if(m_listSteps.begin(), m_listSteps.end(),
-		[&szFuncName](const Step& s)
+		[&szVariableName](const Step& s)
 		{
-			return s.szFuncName == szFuncName;
+			return s.szVariableName == szVariableName;
 		});
 
 	if (it != m_listSteps.end())
@@ -107,12 +107,12 @@ bool ChangedQueue::stepSelected(int nIndex)
 	return true;
 }
 
-Step ChangedQueue::getStep(const QString& szFuncName) const
+Step ChangedQueue::getStep(const QString& szVariableName) const
 {
 	auto it = std::find_if(m_listSteps.begin(), m_listSteps.end(),
-		[&szFuncName](const Step& s)
+		[&szVariableName](const Step& s)
 		{
-			return s.szFuncName == szFuncName;
+			return s.szVariableName == szVariableName;
 		});
 
 	if (it != m_listSteps.end())
@@ -121,13 +121,21 @@ Step ChangedQueue::getStep(const QString& szFuncName) const
 	return Step();
 }
 
+Step ChangedQueue::getStep(int nIndex) const
+{
+	if (nIndex < 0 || nIndex >= m_listSteps.size())
+		return Step();
+
+	return m_listSteps[nIndex];
+}
+
 QVariantList ChangedQueue::getStepsList() const
 {
 	QVariantList qmlSteps;
 	for (const Step& step : m_listSteps) {
 		// 将 Step 转换为 QVariantMap
 		QVariantMap stepMap;
-		stepMap["szFuncName"] = step.szFuncName;
+		stepMap["szVariableName"] = step.szVariableName;
 		stepMap["varValue"] = step.varValue;
 		stepMap["nPriority"] = step.nPriority;
 		stepMap["bSelected"] = step.bSelected;

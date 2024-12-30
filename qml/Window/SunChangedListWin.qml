@@ -65,7 +65,7 @@ Window {
                 anchors.centerIn: parent
 
                 Text {
-                    text: modelData.szFuncName
+                    text: modelData.szVariableName
                     width: 100
                     horizontalAlignment: Text.AlignHCenter
                 }

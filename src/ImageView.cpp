@@ -8,6 +8,9 @@ ImageView::ImageView(QQuickPaintedItem* parent) : QQuickPaintedItem(parent)
 {
 	//connect(this, &ImageView::imageChanged, this, &ImageView::onImageChanged);
 	connect(&m_qChanged, &ChangedQueue::stepsChanged, this, &ImageView::onStepsChanged);
+
+	m_mInitValue["gamma"] = 1;
+	m_mInitValue["brightness"] = 0;
 }
 
 void ImageView::initImage(ImageViewModel* viewModel)
@@ -19,6 +22,32 @@ void ImageView::initImage(ImageViewModel* viewModel)
 	setBaseOffsetX(calcMidOffsetX(m_showImgMat));
 	setBaseOffsetY(calcMidOffsetY(m_showImgMat));
 	update();
+}
+
+void ImageView::initImgConfig(const QString& szVariableName)
+{
+	auto it = m_mInitValue.find(szVariableName);
+	if (it == m_mInitValue.end())
+	{
+		m_pLogger->error("Error: Could not find the init value!");
+		return;
+	}
+
+	const QMetaObject* metaObject = this->metaObject();
+
+	for (int i = 0; i < metaObject->propertyCount(); ++i) 
+	{
+		QMetaProperty property = metaObject->property(i);
+		QString propertyName = property.name();
+
+		if (szVariableName == propertyName) 
+		{
+			QVariant value = it.value();
+			// 使用反射来设置属性值
+			property.write(this, value);
+			m_pLogger->info("Initialized {} with value {}", propertyName.toStdString(), value.toString().toStdString());
+		}
+	}
 }
 
 bool ImageView::isImageOpened()
@@ -70,8 +99,8 @@ void ImageView::cancelImgConfig(QString strWinName)
 
 	for (auto it = m_mOldConfig.begin(); it != m_mOldConfig.end(); ++it)
 	{
-		const QString& strFuncName = it.key();
-		m_qChanged.addOrUpdateStep({ strFuncName, it.value(), 0 });
+		const QString& szVariableName = it.key();
+		m_qChanged.addOrUpdateStep({ szVariableName, it.value(), 0 });
 	}
 
 	m_mNewConfig.clear();
@@ -80,24 +109,26 @@ void ImageView::cancelImgConfig(QString strWinName)
 	update();
 }
 
-void ImageView::addImgConfig(QString strFuncName, QVariant varParms)
+void ImageView::addImgConfig(QString szVariableName, QVariant varParms)
 {
-	if (nullptr == m_pImgMat || strFuncName.isEmpty() || !varParms.isValid())
+	if (nullptr == m_pImgMat || szVariableName.isEmpty() || !varParms.isValid())
 		return;
 
-	Step oldStep = m_qChanged.getStep(strFuncName);
-	m_qChanged.addOrUpdateStep({ strFuncName, varParms, 0, 0 });
-	m_mNewConfig.insert(strFuncName, varParms);
+	Step oldStep = m_qChanged.getStep(szVariableName);
+	m_qChanged.addOrUpdateStep({ szVariableName, varParms, 0, 0 });
+	m_mNewConfig.insert(szVariableName, varParms);
 
 	QVariant varRet;
-	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_RETURN_ARG(QVariant, varRet));
-	m_mOldConfig.insert(strFuncName, varRet);
+	QMetaObject::invokeMethod(this, szVariableName.toStdString().c_str(), Q_RETURN_ARG(QVariant, varRet));
+	m_mOldConfig.insert(szVariableName, varRet);
 
 	emit changedListChanged();
 }
 
 void ImageView::removeListItem(int nIndex)
 {
+	Step step = m_qChanged.getStep(nIndex);
+	initImgConfig(step.szVariableName);
 	if (m_qChanged.removeStep(nIndex))
 		emit changedListChanged();
 }
@@ -131,14 +162,15 @@ void ImageView::initImgPara()
 	m_fZoomOffsetX = 0.0;
 	m_fZoomOffsetY = 0.0;
 	m_fZoomFactor = 0.0;
-	m_nGray = 1;
-	m_nBrightness = 0;
 	m_pImgMat = nullptr;
 	m_showImgMat = Mat();
 	m_qChanged.clear();
 	m_bChanged = false;
 	m_mNewConfig.clear();
 	m_mOldConfig.clear();
+
+	for(auto it = m_mInitValue.begin(); it != m_mInitValue.end(); ++it)
+		initImgConfig(it.key());
 }
 
 void ImageView::resizeImage(const cv::Mat& src, cv::Mat& dst, int nWidth, int nHeight)
@@ -173,26 +205,26 @@ void ImageView::invokeSetParmsFunc(const QString& strWinName, const QMap<QString
 
 	for (auto it = mParms.begin(); it != mParms.end(); ++it)
 	{
-		const QString& strFuncName = it.key();
-		QString strSetFuncName = "set" + strFuncName;
+		const QString& szVariableName = it.key();
+		QString szSetVariableName = "set" + szVariableName;
 
 		// 将首字母置为大写来调用set方法，如gray -> setGray
-		strSetFuncName[3] = strSetFuncName.at(3).toUpper();
+		szSetVariableName[3] = szSetVariableName.at(3).toUpper();
 
-		QMetaObject::invokeMethod(this, strSetFuncName.toStdString().c_str(), Q_ARG(QVariant, it.value()));
+		QMetaObject::invokeMethod(this, szSetVariableName.toStdString().c_str(), Q_ARG(QVariant, it.value()));
 	}
 }
 
-void ImageView::invokeConfigFunc(const QString& strFuncName, const QVariant& varParms)
+void ImageView::invokeConfigFunc(const QString& szVariableName, const QVariant& varParms)
 {
-	if (strFuncName.isEmpty() || !varParms.isValid())
+	if (szVariableName.isEmpty() || !varParms.isValid())
 		return;
 
 	//调用图像处理函数如：gray(const QVariant& nVal, const cv::Mat& pDstMat)
-	QMetaObject::invokeMethod(this, strFuncName.toStdString().c_str(), Q_ARG(QVariant, varParms), Q_ARG(cv::Mat*, &m_showImgMat));
+	QMetaObject::invokeMethod(this, szVariableName.toStdString().c_str(), Q_ARG(QVariant, varParms), Q_ARG(cv::Mat*, &m_showImgMat));
 }
 
-void ImageView::gray(const QVariant& nVal, cv::Mat* pDstMat)
+void ImageView::gamma(const QVariant& nVal, cv::Mat* pDstMat)
 {
 	if (nullptr == m_pImgMat)
 		return;
@@ -245,9 +277,9 @@ double ImageView::zoomFactor() const
 	return m_fZoomFactor;
 }
 
-QVariant ImageView::gray() const
+QVariant ImageView::gamma() const
 {
-	return m_nGray;
+	return m_nGamma;
 }
 
 Q_INVOKABLE QVariant ImageView::brightness() const
@@ -287,10 +319,10 @@ void ImageView::setZoomFactor(double fZoomFactor)
 	emit zoomFactorChanged();
 }
 
-void ImageView::setGray(QVariant nGray)
+void ImageView::setGamma(QVariant nGamma)
 {
-	m_nGray = nGray.toInt();
-	emit grayChanged();
+	m_nGamma = nGamma.toInt();
+	emit gammaChanged();
 }
 
 Q_INVOKABLE void ImageView::setBrightness(QVariant nBrightness)
@@ -337,9 +369,9 @@ void ImageView::onStepsChanged()
 
 	for (auto it = m_qChanged.begin(); it != m_qChanged.end(); it++)
 	{
-		auto&& [szFuncName, varValue, nPriority, bSelected] = *it;
-		invokeConfigFunc(szFuncName, varValue);
-		m_pLogger->info("func name: {}, value: {}, priority: {}", szFuncName.toStdString(), varValue.toString().toStdString(), nPriority);
+		auto&& [szVariableName, varValue, nPriority, bSelected] = *it;
+		invokeConfigFunc(szVariableName, varValue);
+		m_pLogger->info("func name: {}, value: {}, priority: {}", szVariableName.toStdString(), varValue.toString().toStdString(), nPriority);
 	}
 	resizeImage(m_showImgMat, m_showImgMat, m_nWinWidth, m_nWinHeight);
 	update();
