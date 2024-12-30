@@ -8,10 +8,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(OPENCV_LIB_DIR_PATH $ENV{OPENCV_LIB_DIR})
 add_compile_options("/EHsc")
 
+if(MSVC)
+    add_compile_options("/utf-8")
+endif()
+
 message(STATUS ${OPENCV_LIB_DIR_PATH})
 
 include(FetchContent)
-
 FetchContent_Declare(
     spdlog
     URL ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog-1.15.0.tar.gz
