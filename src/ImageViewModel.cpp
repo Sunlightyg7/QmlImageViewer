@@ -14,9 +14,11 @@ void ImageViewModel::openImage(QString filePath)
 	filePath = filePath.remove("file://");
 #endif
 
-	setImgMat(cv::imread(filePath.toLocal8Bit().toStdString(), cv::IMREAD_COLOR_RGB));
-	if (m_pImgMat->empty())
-		m_pLogger->error("Error: Could not open or find the imgMat!");
+	m_pImgMat = setImgMat(cv::imread(filePath.toLocal8Bit().toStdString(), cv::IMREAD_COLOR_RGB));
+	if (!m_pImgMat || m_pImgMat->empty())
+		return;
+
+	emit imageChanged(this);
 }
 
 std::shared_ptr<cv::Mat> ImageViewModel::imgMat() const
@@ -24,14 +26,13 @@ std::shared_ptr<cv::Mat> ImageViewModel::imgMat() const
 	return m_pImgMat;
 }
 
-void ImageViewModel::setImgMat(const cv::Mat& imgMat)
+std::shared_ptr<cv::Mat> ImageViewModel::setImgMat(const cv::Mat& imgMat)
 {
 	if (imgMat.empty())
 	{
 		m_pLogger->error("Error: Could not open or find the imgMat!");
-		return;
+		return nullptr;
 	}
 
-	m_pImgMat = std::make_shared<cv::Mat>(imgMat);
-	emit imageChanged(this);
+	return std::make_shared<cv::Mat>(imgMat);
 }
