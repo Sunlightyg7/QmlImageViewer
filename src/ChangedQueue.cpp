@@ -129,6 +129,11 @@ Step ChangedQueue::getStep(int nIndex) const
 	return m_listSteps[nIndex];
 }
 
+QList<Step> ChangedQueue::getSteps() const
+{
+	return m_listSteps;
+}
+
 QVariantList ChangedQueue::getStepsList() const
 {
 	QVariantList qmlSteps;
@@ -144,3 +149,22 @@ QVariantList ChangedQueue::getStepsList() const
 	return qmlSteps;
 }
 
+int ChangedQueue::size() const
+{
+	return m_listSteps.size();
+}
+
+void ChangedQueue::clear()
+{
+	m_listSteps.clear();
+}
+
+QList<Step>::const_iterator ChangedQueue::begin() const
+{
+	return m_listSteps.begin();
+}
+
+QList<Step>::const_iterator ChangedQueue::end() const
+{
+	return m_listSteps.end();
+}

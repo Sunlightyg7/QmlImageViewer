@@ -137,15 +137,15 @@ public:
 	void scaleImage(const cv::Mat& src, cv::Mat& dst, double fFactor); 
 
 	/**
-	 * @brief 应用图像上的修改，并将窗口名和窗口中所有的修改放进修改队列
+	 * @brief 用反射调用相应szVariableName名的set函数
 	 *
 	 * @param [in] strWinName 窗口名，如gray
-	 * @param [in] mParms 包含窗口中所有的修改
+	 * @param [in] mParms 包含窗口中所有的修改，<szVariableName，值>
 	 */
 	void invokeSetParmsFunc(const QString& strWinName, const QMap<QString, QVariant>& mParms);
 
 	/**
-	 * @brief 根据szVariableName调用相应的图像调整函数
+	 * @brief 根据szVariableName调用相应的图像处理函数
 	 *
 	 * @param [in] szVariableName 图像调整函数名，如gray，动态调用gray函数
 	 * @param [in] varParms 新的参数

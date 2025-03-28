@@ -20,31 +20,21 @@ class ChangedQueue : public QObject
 public:
     explicit ChangedQueue(QObject* parent = nullptr);
 
-    // 添加或更新调整步骤
     void addOrUpdateStep(const Step& step);
-
-    // 删除调整步骤
     bool removeStep(const QString& szVariableName);
-
     bool removeStep(int nIndex);
-
     // 移动调整步骤的位置
     bool moveStep(int nFromIndex, int nToIndex);
-
-    // 调整步骤的优先级
     bool adjustPriority(const QString& szVariableName, int nNewPriority);
-
     bool stepSelected(int nIndex);
-
     Step getStep(const QString& szVariableName) const;
     Step getStep(int nIndex) const;
-    QList<Step> getSteps() const { return m_listSteps; }
+    QList<Step> getSteps() const;
     QVariantList getStepsList() const;
-    int size () const { return m_listSteps.size(); }
-    void clear() { m_listSteps.clear(); }
-    auto begin() const { return m_listSteps.begin(); }
-	auto end() const { return m_listSteps.end(); }
-
+    int size() const;
+    void clear();
+    QList<Step>::const_iterator begin() const;
+    QList<Step>::const_iterator end() const;
 
 signals:
     void stepsChanged();

@@ -49,3 +49,22 @@ QImage Utils::matToQImage(const cv::Mat& mat)
 		return QImage();
 	}
 }
+
+std::string Utils::calcCurrTime()
+{
+	using namespace std::chrono;
+
+	std::string strTime;
+	char buffer[1024] = { 0 };
+
+	// 保存记录时间
+	system_clock::time_point now = system_clock::now();
+	time_t tt = system_clock::to_time_t(now); //利用chrono库自带的方法转换为ctime中的time_t, 会导致精度降低
+	// 格式化时间为：2024-04-23-17.13.06
+	if (std::strftime(buffer, sizeof(buffer), "%F-%H.%M.%S", std::localtime(&tt)))
+	{
+		strTime = buffer;
+	}
+
+	return strTime;
+}

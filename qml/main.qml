@@ -13,7 +13,7 @@ ApplicationWindow {
     height: 600
     minimumWidth: 485
     minimumHeight: 300
-    title: "Image Processer"
+    title: "Image Viewer"
 
     property Component imgConfigWin: null
 

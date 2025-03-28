@@ -11,6 +11,7 @@ Window {
 
     signal confirmClicked()
     signal cancelClicked()
+    // 当窗口内的值变化时发出，由C++反射调用相应图像处理函数
     signal propertyChanged(string name, variant value)
     // 防止关闭窗口时重复触发cancelClicked
     property bool bWinCloseBtn: true

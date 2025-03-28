@@ -5,30 +5,6 @@
 #include "ImageViewModel.h"
 #include "ImageView.h"
 
-/**
- * @brief 返回当前时间字符串，格式：2024-04-23-17.13.06
- *
- * @return 当前时间字符串
- */
-inline std::string calcCurrTime()
-{
-	using namespace std::chrono;
-
-	std::string strTime;
-	char buffer[1024] = { 0 };
-
-	// 保存记录时间
-	system_clock::time_point now = system_clock::now();
-	time_t tt = system_clock::to_time_t(now); //利用chrono库自带的方法转换为ctime中的time_t, 会导致精度降低
-	// 格式化时间为：2024-04-23-17.13.06
-	if (std::strftime(buffer, sizeof(buffer), "%F-%H.%M.%S", std::localtime(&tt)))
-	{
-		strTime = buffer;
-	}
-
-	return strTime;
-}
-
 #ifdef _WIN32
 #include <windows.h>
 #include <Dbghelp.h>
@@ -51,7 +27,7 @@ void CreateDumpFile(const char* lpstrDumpFilePathName, EXCEPTION_POINTERS* pExce
 // 处理Unhandled Exception的回调函数
 LONG ApplicationCrashHandler(EXCEPTION_POINTERS* pException) {
 	CreateDirectory("dump", NULL);
-	auto time_str = calcCurrTime();
+	auto time_str = Utils::calcCurrTime();
 	CreateDumpFile(("./dump/" + time_str + ".dmp").c_str(), pException);
 	return EXCEPTION_EXECUTE_HANDLER;
 }

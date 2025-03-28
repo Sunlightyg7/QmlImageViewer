@@ -15,7 +15,7 @@ public:
 
     Q_INVOKABLE void openImage(QString filePath); // 打开图片
     std::shared_ptr<cv::Mat> imgMat() const;
-    std::shared_ptr<cv::Mat> setImgMat(const cv::Mat& imgMat);
+    bool setImgMat(const cv::Mat& imgMat);
 
 signals:
     void imageChanged(ImageViewModel* viewModel);
