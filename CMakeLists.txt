@@ -11,14 +11,6 @@ if(MSVC)
     add_compile_options("/utf-8")
 endif()
 
-if(WIN32)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lib/win/opencv_world500d.dll DESTINATION ${CMAKE_BINARY_DIR}/bin)
-    else()
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lib/win/opencv_world500.dll DESTINATION ${CMAKE_BINARY_DIR}/bin)
-    endif()
-endif()
-
 include(FetchContent)
 FetchContent_Declare(
     spdlog
@@ -61,6 +53,12 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
     message(STATUS "System: Windows")
 
     file(ARCHIVE_EXTRACT INPUT ${CMAKE_CURRENT_SOURCE_DIR}/lib/win.zip DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/win)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lib/win/opencv_world500d.dll DESTINATION ${CMAKE_BINARY_DIR}/bin)
+    else()
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/lib/win/opencv_world500.dll DESTINATION ${CMAKE_BINARY_DIR}/bin)
+    endif()
+
     target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib/win)
     target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick spdlog::spdlog)
 
