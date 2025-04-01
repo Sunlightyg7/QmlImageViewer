@@ -34,6 +34,8 @@ add_executable(${PROJECT_NAME}
 
 # 根据 CMAKE_SYSTEM_NAME 判断操作系统
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    #set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};${CMAKE_CURRENT_SOURCE_DIR}/lib/linux")
+    set(CMAKE_BUILD_TYPE "Release")
     message(STATUS "System: Linux")
     find_package(OpenCV REQUIRED)
 
@@ -41,11 +43,10 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     if(OpenCV_FOUND)
         message(STATUS "OpenCV 库已找到.")
         message(STATUS "OpenCV 头文件路径: ${OpenCV_INCLUDE_DIRS}")
-        message(STATUS "OpenCV 库文件路径: ${OpenCV_LIBS}")
+        message(STATUS "OpenCV 库文件路径: ${OpenCV_LIBRARIES}")
 
-        target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick spdlog::spdlog)
+        target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick spdlog::spdlog ${OpenCV_LIBRARIES})
         include_directories(${PROJECT_NAME} ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARY})
     else()
         message(FATAL_ERROR "OpenCV 库未找到，请确保已安装 libopencv-dev 包并且 CMake 能够找到它。")
     endif()
