@@ -45,7 +45,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 
         target_link_libraries(${PROJECT_NAME} PUBLIC Qt5::Quick spdlog::spdlog)
         include_directories(${PROJECT_NAME} ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+        target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARY})
     else()
         message(FATAL_ERROR "OpenCV 库未找到，请确保已安装 libopencv-dev 包并且 CMake 能够找到它。")
     endif()
